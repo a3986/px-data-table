@@ -37,6 +37,19 @@
             <template is="dom-if" if="{{_isFalse(column.hide)}}">
               <span class$="{{_getHeaderClass(column)}}" draggable="{{enableColumnReorder}}" on-touchstart="_dragStartColumnHeader" on-touchmove="_touchMoveHeader" on-touchleave="_dragLeave" on-touchend="_touchDropColumnHeader" on-dragleave="_dragLeave" on-dragstart="_dragStartColumnHeader" on-dragover="_dragOverHeader" on-drop="_dragDropColumnHeader" on-dragend="_dragEndColumnHeader">
                 <div class="flex header--container">
+				<!--The select all checkbox can be moved to top so that dependency of filter header and select all functionality is removed-->
+				<!--<template is="dom-if" if="{{_isSelectAllColumn(column)}}">
+                  <span class="flex flex--center flex--middle">
+                    <input id="selectAllCheckbox" type="checkbox"
+                           on-change="_clickSelectAll"/>
+                  </span>
+                </template>-->
+				<template is="dom-if" if="{{_isCheckColumn(column)}}">
+                  <span class="flex flex--center flex--middle">
+                    <input id="selectAllCheckbox" type="checkbox" data-field="{{column.name}}"
+                           on-change="_clickSelectAllForCheckColumn"/>
+                  </span>
+                </template>
                   <span
                     class$="{{_getTextSortingClass(column, sortedColumn)}}"
                     on-tap="_sort">{{column.label}}<iron-icon icon$="{{_getSortingIcon(column, sortedColumn, descending)}}" class$="{{_getSortingClass(column, sortedColumn, descending)}}"></iron-icon>
@@ -64,6 +77,12 @@
                            on-change="_clickSelectAll"/>
                   </span>
                 </template>
+				<!--template is="dom-if" if="{{_isCheckColumn(column)}}">
+                  <span class="flex flex--center">
+                    <input id="selectAllCheckbox" type="checkbox" data-field="{{column.name}}"
+                           on-change="_clickSelectAllForCheckColumn"/>
+                  </span>
+                </template-->
 
                 <!-- filter entry -->
                 <template is="dom-if" if="{{_isFilterableColumn(column, column.filterable)}}">
@@ -79,7 +98,7 @@
 
           <div class$="{{_getRowClass(internalRow,striped)}}">
             <!-- Data cells -->
-            <template is="dom-repeat" items="{{meta}}" as="column">
+            <template id="columnList" is="dom-repeat" items="{{meta}}" as="column">
               <template is="dom-if" if="{{_isFalse(column.hide)}}">
                 <!-- selected column checkbox -->
                 <template is="dom-if" if="{{_isEqual(column.type, 'selected')}}">
@@ -98,16 +117,18 @@
                                       cell-selected="[[internalRow._selected]]"
                                       on-validate="_handleValidateEvent"
                                       cell-type="{{column.type}}"
+									  callbacks="{{wrapperCallbacks}}"
                                       dropdown-items="{{column.dropdownItems}}"
                                       dropdown-bounds="{{scrollBody}}"
                                       cell-display-value="{{_readContent(internalRow, column)}}"
                                       cell-value="{{_getInternalDataAt(internalRow, column.name)}}"
                                       cell-display-tooltip="{{_shouldClipDatumString(internalRow, column)}}"
                                       cell-editable="{{column.editable}}"
+									  editor-options="{{column.editorOptions}}"
                                       cell-validation="{{_getInternalCellValidationStateAt(internalRow, column.name)}}"
                                       column-name="{{column.name}}"
                                       dropdown-max-character-width="{{column.maxColumnCharacterWidth}}"
-                                      on-tap="_clickCell">
+                                      on-tap="_clickCell" data-row="{{internalRow}}">
                   </px-data-table-cell>
                 </template>
               </template>
@@ -180,6 +201,13 @@
         type: Boolean,
         value: false
       },
+	  tableCallbacks:{
+		type: Object
+	  },
+	  wrapperCallbacks:{
+		type:Object,
+		computed: 'computeCallbacks(tableCallbacks)'
+	  },
       //filterable: if table row is filterable
       filterable: {
         type: Boolean,
@@ -315,8 +343,7 @@
     },
 
     observers: [
-      '_updateDisplayedRows(firstItemIndex)', // when the first item to display changes
-      '_updateDisplayedRows(pageSize)', // when the size of the page changes
+      '_updateDisplayedRows(firstItemIndex,pageSize)', // when the first item to display changes or when the size of the page changes
       '_dataChanged(data.*)',
       '_columnChooserChanged(_columnChooserItems.*)',
       '_computeIfColumnFilterEnabled(meta.splices, filterable, meta.*, selectable)'
@@ -479,7 +506,7 @@
         return it._selected === true;
       });
 
-      this._filterSortAndUpdateDisplayedTable();
+      this._filterSortAndUpdateDisplayedTable();//Both forceRender and goToDefaultPage 1 is false
 
       var pathNumber = new RegExp('([#])([0-9])+');
 
@@ -495,7 +522,7 @@
           }
         });
         if(this._cellChanged(this._readContent(this._internalData[index], column), changeRec.value)){
-          this._handleValidateEvent(evt);
+          this._handleValidateEvent(evt); //TODO: evt variable not defined correct the code
         }
       }
 
@@ -510,6 +537,24 @@
       }
 
     },
+	/*Instead of using tableCallback, wrapper callbacks is sent so that in case there is some processing that needs to be done at table level
+	those can be handled at this level. Cell control will raise a wrapper callback and from wrapper callback original table callback will be raised	
+	*/
+	computeCallbacks:function(tableCallbacks)
+	{
+		var self = this;
+		var wrapperCallbacks = {};
+		if(tableCallbacks)
+		{
+			for(var callback in tableCallbacks)
+			{
+				wrapperCallbacks[callback] = function(cellObj){
+					return tableCallbacks[callback](cellObj.dataRow.row,cellObj.columnName);
+				}.bind(this);
+			}
+		}
+		return wrapperCallbacks;
+	},
 
     /********** Generating column metadata *************/
 
@@ -557,7 +602,7 @@
 
     /********** Filter/Sort main function *************/
 
-    _filterSortAndUpdateDisplayedTable: function() {
+    _filterSortAndUpdateDisplayedTable: function(forceRender,defaultPage) {
       var i,
           index,
           count= 0,
@@ -594,8 +639,11 @@
       this.set('numberOfItems', count);
 
       // with filtering/sorting, it's best just to go back to the first page
-      this.$.pagination.goToPageNumber(1);
-      this._updateDisplayedRows();
+	  //The function _filterSortAndUpdateDisplayedTable gets called whenever some data changes or filtering/sorting is applied
+	  //When data is changed on 2nd page even in that case the page was getting reset to page 1 which is not ideal
+	  if(forceRender && defaultPage!=false)
+		this.$.pagination.goToPageNumber(1);
+      this._updateDisplayedRows(null,null,forceRender);//FirstItem index and pageSize is not changed and forceRender is passed parameter
     },
 
     /********** Internal data structure ***********/
@@ -678,22 +726,45 @@
       this.$.pagination.setPageSize(this.pageSize);
     },
 
-    _updateDisplayedRows: function() {
+    _updateDisplayedRows: function(firstItemIndex,pageSize,forceRender) {
       var fromPage,
           to;
       if(this.firstItemIndex !== null && this.firstItemIndex !== undefined &&
         this.pageSize !== null && this.pageSize !== undefined &&
         this.filteredSortedData !== undefined && this.filteredSortedData !== null && !this.hidePaginationControl) {
-
         fromPage = this.firstItemIndex - 1; // pagination is 1-based
         to = fromPage + this.pageSize;
-
+        //If page is changed or pageSize is changed in that case force render is true
+		if(firstItemIndex!=null && pageSize!=null)
+		{
+			forceRender = true;
+		}
+		if(forceRender)
+		{
+			this.forceRenderList();
+		}
         this.set('displayedRows', this.filteredSortedData.slice(fromPage, to));
 
       } else if (this.filteredSortedData !== undefined && this.filteredSortedData !== null && this.hidePaginationControl) {
+		if(forceRender)
+		{
+			this.forceRenderList();
+		}
         this.set('displayedRows', this.filteredSortedData);
       }
     },
+	//When rendered with standard input controls like checkbox and number, the grid was not getting refreshed
+	//The issues seems because of the nested templates used. The code below acts as a workaround to refresh the grid everytime
+	//Could be related to this issue -> https://github.com/Polymer/polymer/issues/1713
+	//TODO - Remove the workaround and replace with proper solution
+	forceRenderList:function()
+	{
+		this.set('displayedRows',[]);
+		if(this.querySelector("template#columnList"))
+		{
+			this.querySelector("template#columnList").render();
+		}
+	},
 
     /********** Sorting ************/
 
@@ -710,7 +781,7 @@
           this.set('descending', false); // always start ascending when click new column
         }
       }
-      this._filterSortAndUpdateDisplayedTable();
+      this._filterSortAndUpdateDisplayedTable(true,true);
     },
 
     _sortByColumn: function(rowsToSort) {
@@ -867,7 +938,7 @@
           // add the new column to the filtered list
           this.filteredColumns.push({"name": column.name, "userEntry": userEntry});
         }
-        this._filterSortAndUpdateDisplayedTable();
+        this._filterSortAndUpdateDisplayedTable(true,true);
       }
     },
 
@@ -952,8 +1023,7 @@
     },
     _handleValidateEvent: function(evt){
       var column = evt.model.column,
-          validationObj = column.validate(evt.detail.newValue);
-
+	  validationObj = column.validate(evt.detail); //Sending the entire object will allow end user to apply row level validations
       evt.currentTarget.cellValidation = validationObj;
       this._setInternalCellValidationStateAt(evt.model.internalRow, column.name, validationObj);
     },
@@ -984,6 +1054,14 @@
 
       this.fire('px-cell-click', detail); // fire the event after it is marked selected
     },
+	 _clickSelectAllForCheckColumn: function(e) {
+      if(e.target.checked) {
+        this._setAllRows(true,e.target.dataField); // selected
+      }
+      else {
+        this._setAllRows(false,e.target.dataField); // unselected
+      }
+    },
     _clickSelectAll: function(e) {
       if(e.target.checked) {
         this._setAllRows(true); // selected
@@ -993,9 +1071,19 @@
       }
     },
 
-    _setAllRows: function(isSelected) {
+    _setAllRows: function(isSelected,columnName) {
       var i,
           len;
+		  //This if block is used when select all functionality of boolean column is used
+		  if(columnName)
+		  {
+			for(i = 0, len = this._internalData.length; i < len; i++) {
+				this._setInternalDataAt(this._internalData[i], columnName, isSelected);
+				this.data[i][columnName]=isSelected;
+			 }
+			  this._filterSortAndUpdateDisplayedTable(true,false);//Force render is true and goToPage 1 is false
+			  return;
+		  }
       // set all rows selected/unselected
       for(i = 0, len = this._internalData.length; i < len; i++) {
         this._setInternalDataAt(this._internalData[i], '_selected', isSelected);
@@ -1420,6 +1508,9 @@
     },
     _isSelectAllColumn: function(column) {
       return column.selectAll;
+    },
+	_isCheckColumn: function(column) {
+      return column.type=="boolean";
     },
     _isFilterableColumn: function(column, filterable) {
       return !column.selectAll && column.filterable && !column.hide;

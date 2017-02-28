@@ -26,6 +26,14 @@
         <template is="dom-if" if="{{_isEqual(cellType, 'text')}}">
           <textarea required$="{{column.required}}" on-blur="saveCell">{{cellValue}}</textarea>
         </template>
+		<template is="dom-if" if="{{_isEqual(cellType, 'number')}}">
+		<div class="flex__item cell--container">
+          <span>
+		    <input type="number" id="celleditinput"	title$="{{cellValue}}" value$="{{cellValue}}" on-input="_cellValueChanged"
+                 on-blur="saveCell" min={{editorOptions.min}} max="{{editorOptions.max}}" />
+          </span>
+        </div>
+      </template>
       </px-edit-cell>
       <!--dropdown template  -->
       <template is="dom-if" if="{{_isEqual(cellType, 'dropdown')}}">
@@ -49,6 +57,13 @@
           </span>
         </div>
       </template>
+	  <template is="dom-if" if="{{_isEqual(cellType, 'boolean')}}">
+        <div class="flex__item cell--container">
+          <span class="flex flex--center flex--middle">
+		    <input type="checkbox"	title$="{{cellValue}}" checked$="{{cellValue}}" on-change="saveCell"/>	<!--on-change="search" onchange="saveCell"/>-->
+          </span>
+        </div>
+      </template>
       <!-- in place editing template -->
       <template is="dom-if" if="{{_isEqual(cellType,'string')}}">
         <div class="flex cell--container">
@@ -64,8 +79,22 @@
           </span>
         </div>
       </template>
+	   <template is="dom-if" if="{{_isEqual(cellType,'number')}}">
+        <div class="flex cell--container">
+          <span id="cellvalue" class$="{{_getValueCellClass(_editing, cellValidation.passedValidation, cellDisplayValue)}}">{{cellDisplayValue}}
+            <template is="dom-if" if="{{cellDisplayTooltip}}">
+              <px-tooltip
+                orientation="top"
+                smart-orientation
+                delay="1000"
+                tooltip-message="{{cellValue}}">
+              </px-tooltip>
+            </template>
+          </span>
+        </div>
+      </template>
       <!-- icon template -->
-      <template is="dom-if" if="{{isNotEqual(cellType, 'dropdown')}}">
+      <template is="dom-if" if="{{_isEditIconRequired(cellType)}}">
         <div class="fa fa-fw cell-status--container">
           <iron-icon class$="{{_getCellIconClass(_showEditIcon, _editing, cellValidation.passedValidation)}}"
             icon="{{_getCellIcon(_showEditIcon, _editing, cellValidation.passedValidation)}}">
@@ -129,6 +158,10 @@
           type: Boolean,
           value: false
         },
+		editorOptions:{
+			type:Object,
+			value:{}
+		},
         dropdownItems:{
           type: Array,
           value: function(){return [];},
@@ -185,7 +218,10 @@
         _cellAnchor: {
           type: HTMLElement,
           value: function() { return null;}
-        }
+        },
+		callbacks:{
+			type:Object
+		}
       },
       listeners: {
         'tap': 'editCell',
@@ -212,11 +248,11 @@
       _cellValueChanged: function(evt){
         clearTimeout(this._editTimeout);
         this._editTimeout = setTimeout(function(){
-          this.fire('validate', {newValue: this.$$('#celleditinput').value});
+          this.fire('validate', {newValue: this.$$('#celleditinput').value,eOpts:{inputObj:this.$$('#celleditinput'),target:this}});
         }.bind(this), 300);
       },
       onCellHovered: function(evt){
-        this.set('_showEditIcon', this.cellEditable);
+        this.set('_showEditIcon', this.cellEditable && this._isCellEditAllowed());
       },
       onCellUnHovered: function(evt){
         this.set('_showEditIcon',false);
@@ -302,26 +338,54 @@
       editCell: function(){
         var editCell = this.$$(".cell--edit"),
             valueCell = this.$$(".cell--value");
-        if (this.cellEditable && this.cellType !=='dropdown') {
-          this.set('_editing', true);
-          this.toggleClass('cell__edit', this._editing);
-          this.set('_undoValue', this.$$(".cell--value").innerText);
-          Polymer.dom(editCell).querySelector('input,select,textarea').focus();
+        if (this.cellEditable && this.cellType !=='dropdown' && this.cellType !=='boolean') {
+			var isEditable = this._isCellEditAllowed();
+			if(isEditable)
+			{
+				this.set('_editing', true);
+				this.toggleClass('cell__edit', this._editing);
+				this.set('_undoValue', this.$$(".cell--value").innerText);
+				Polymer.dom(editCell).querySelector('input,select,textarea').focus();
+			}
         }
       },
+	  _isCellEditAllowed: function()
+	  {
+			var isEditable = true;
+			if(this.callbacks && this.callbacks.beforeEdit)
+			{
+				isEditable = this.callbacks.beforeEdit(this);
+			}
+			return isEditable;
+	  },
       saveCell: function(evt){
-        this._editing = false;
-        this.toggleClass('cell__edit', this._editing);
-        var value;
-        if(this._cancelSave === true){
-          this.set('_cancelSave', false);
-          value = this._undoValue;
-          Polymer.dom(this.$$('.cell--edit')).querySelector('input,select,textarea').value = value;
-        }
-        else {
-          value = evt.target.value;
-        }
-        this.fire('save', {newValue: value});
+		var isEditable = this._isCellEditAllowed();
+		if(isEditable)
+		{
+			this._editing = false;
+			this.toggleClass('cell__edit', this._editing);
+			var value;
+			if(this._cancelSave === true){
+			  this.set('_cancelSave', false);
+			  value = this._undoValue;
+			  Polymer.dom(this.$$('.cell--edit')).querySelector('input,select,textarea').value = value;
+			}
+			else if(evt.target && evt.target.type && evt.target.type.toUpperCase()=="CHECKBOX")
+			{
+				value = evt.target.checked;
+			}
+			else {
+			  value = evt.target.value;
+			}
+			this.fire('save', {newValue: value});
+		}
+		else
+		{
+			if(evt.target && evt.target.type && evt.target.type.toUpperCase()=="CHECKBOX")
+			{
+				evt.target.checked = !evt.target.checked;
+			}
+		}
       },
       _getEditCellClass: function(editing){
         var classList = ['cell--edit'];
@@ -390,7 +454,15 @@
         this.toggleClass('cell--value__highlight--color__high', false);
         this.toggleClass('cell--value__highlight--color__medium', false);
         this.toggleClass('cell--value__highlight--color__low', false);
-      }
+      },
+	  _isEditIconRequired:function(cellType)
+	  {
+		 if(cellType =='dropdown' || cellType =='boolean')
+		 {
+			return false;
+		 }
+		 return true;
+	  }
     });
   </script>
 </dom-module>

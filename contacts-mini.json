@@ -3,7 +3,7 @@
     "first": "Valentine",
     "last": "Meyer",
     "image": "https://s3.amazonaws.com/uifaces/faces/twitter/iboldurev/73.jpg",
-    "boolean": true,
+    "boolean": false,
     "guid": "8c3bd9ad-e8d6-4ea4-85e6-d145295f3f91",
     "integer": 99,
     "date": "Sat Feb 17 1973 03:45:57 GMT-0800 (PST)",
