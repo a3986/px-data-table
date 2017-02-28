@@ -506,8 +506,16 @@
         return it._selected === true;
       });
 
-      this._filterSortAndUpdateDisplayedTable();//Both forceRender and goToDefaultPage 1 is false
-
+	  //Entire Data Changed
+	  if(changeRec.path=="data")
+	  {
+		this._filterSortAndUpdateDisplayedTable(true,true);//Both forceRender and goToDefaultPage 1 is true
+		this._setHeaderToDefaultState(); //Set the state of header checkbox to default
+	  }
+	  else //When only a property in a row is changed
+	  {
+		this._filterSortAndUpdateDisplayedTable();//Both forceRender and goToDefaultPage 1 is false
+	  }
       var pathNumber = new RegExp('([#])([0-9])+');
 
       if (pathNumber.test(changeRec.path)) {
@@ -741,14 +749,14 @@
 		}
 		if(forceRender)
 		{
-			this.forceRenderList();
+			this._forceRenderList();
 		}
         this.set('displayedRows', this.filteredSortedData.slice(fromPage, to));
 
       } else if (this.filteredSortedData !== undefined && this.filteredSortedData !== null && this.hidePaginationControl) {
 		if(forceRender)
 		{
-			this.forceRenderList();
+			this._forceRenderList();
 		}
         this.set('displayedRows', this.filteredSortedData);
       }
@@ -757,7 +765,7 @@
 	//The issues seems because of the nested templates used. The code below acts as a workaround to refresh the grid everytime
 	//Could be related to this issue -> https://github.com/Polymer/polymer/issues/1713
 	//TODO - Remove the workaround and replace with proper solution
-	forceRenderList:function()
+	_forceRenderList:function()
 	{
 		this.set('displayedRows',[]);
 		if(this.querySelector("template#columnList"))
@@ -765,7 +773,17 @@
 			this.querySelector("template#columnList").render();
 		}
 	},
-
+	_setHeaderToDefaultState:function()
+	{
+		var headerCheckboxList = this.querySelectorAll("input#selectAllCheckbox");
+		for(var index=0; index<headerCheckboxList.length; index++)
+		{
+			if(headerCheckboxList[index].checked)
+			{
+				headerCheckboxList[index].checked = !headerCheckboxList[index].checked;
+			}
+		}
+	},
     /********** Sorting ************/
 
     // sort by header click handler
