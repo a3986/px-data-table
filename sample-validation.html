@@ -1,0 +1,49 @@
+<script>
+var PxValidators = {
+	errorObject: function () {
+		return {
+			passedValidation: false,
+			failedValidationFunctionName: '',
+			failedValidationErrorMessage: ''
+		};
+	},
+	isNumber: function (valueObj) {
+		var value = valueObj.newValue;
+		var errObj = PxValidators.errorObject();
+		errObj.failedValidationFunctionName = 'isNumber';
+		errObj.failedValidationErrorMessage = 'Enter a numeric value';
+		errObj.passedValidation = ((value || value === 0) && value.toString() !== "true") ? (+value === +value) : false;
+		return errObj;
+	},
+	isNumberInRange: function (valueObj) {
+		// var valueObj = evt.detail;
+		var value = valueObj.newValue;
+		var target = valueObj.eOpts.target;
+		var inputObj = valueObj.eOpts.inputObj;
+		var errObj = PxValidators.errorObject();
+		errObj.failedValidationFunctionName = 'isNumber';
+		errObj.failedValidationErrorMessage = 'Enter a numeric value';
+		errObj.passedValidation = ((value || value === 0) && value.toString() !== "true") ? (+value === +value) : false;
+		if (errObj.passedValidation) {
+			if (inputObj.min != null && inputObj.min != undefined && Number(value) < Number(inputObj.min)) {
+				errObj.failedValidationErrorMessage = 'Value should be greater than or equal to ' + inputObj.min;
+				errObj.passedValidation = false;
+				return errObj;
+			}
+			if (inputObj.max != null && inputObj.max != undefined && Number(value) > Number(inputObj.max)) {
+				errObj.failedValidationErrorMessage = 'Value should be less than or equal to ' + inputObj.max;
+				errObj.passedValidation = false;
+				return errObj;
+			}
+		}
+		return errObj;
+	},
+	alwaysFails: function (value) {
+		var errObj = PxValidators.errorObject();
+		errObj.failedValidationFunctionName = 'alwaysFails';
+		errObj.failedValidationErrorMessage = 'Nope';
+		errObj.passedValidation = false;
+		return errObj;
+	}
+};
+</script>

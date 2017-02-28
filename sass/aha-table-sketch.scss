@@ -182,6 +182,13 @@ label {
   width:4px;
   padding: 0;
 }
+//Clash with Clear fix code because of which paging toolbar comes in 3 lines - So explicitly setting before and after as display none
+.px-pagination.pager::before,.px-pagination.pager::after{
+	display:none;
+}
+.btn{
+	vertical-align:inherit;
+}
 
 // Trumps
 @import "inuit-clearfix/_trumps.clearfix.scss";

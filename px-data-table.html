@@ -119,6 +119,7 @@ Custom property | Description | Default
                  striped="{{striped}}"
                  table-columns="{{tableColumns}}"
                  table-rows="{{tableRows}}"
+				 table-callbacks="{{tableCallbacks}}"
                  selectable="{{selectable}}"
                  selected-rows="{{selectedRows}}"
                  meta="{{meta}}"
@@ -306,8 +307,16 @@ Custom property | Description | Default
       enableColumnResize: {
         type: Boolean,
         value: false
-      }
-    },
+      },
+	  /* Property which will contain various callbacks which can be called by various events
+	  These callbacks can be used as hooks by solution developers to wire in their decision points.
+	  For eg: beforeEdit callback can be called everytime user wants to edit a cell. If solution developer returns false, then edit flow is blocked	  
+	  */
+	  tableCallbacks:{
+		type: Object,
+		value:{}
+	  }
+    }
 
     /**
      * Events:

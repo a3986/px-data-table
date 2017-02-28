@@ -169,7 +169,11 @@ Element that defines a columns in a data table.
       _highLightElLoadedCount: {
         type: Number,
         value: 0
-      }
+      },
+	  editorOptions:{
+		type:Object,
+		value:{}
+	  }
     },
     validate: function(value){
       var validationEl = Polymer.dom(this).querySelector('px-validation');
