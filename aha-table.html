@@ -318,6 +318,17 @@
         type: Boolean,
         value: false
       },
+	   /**
+       * Property to explicitly hide filter row.
+       * If the property value is true, it will not check any other value hide the filter bar.
+       * Use case could be that solution developer wants the filter functionality but
+       * has provided the option somewhere else in the UI
+       * @default false
+       */
+	  hideFilterRow:{
+		type:Boolean,
+		value:false
+	  },
       /**
        * When currently resizing a header
        */
@@ -1666,9 +1677,9 @@
       return header;
     },
     _computeIfColumnFilterEnabled: function(meta, filterable) {
-      this._enableFilterRow = meta && (this.selectable === true || filterable && this.meta.some(function(val){
+      this._enableFilterRow = !this.hideFilterRow && (meta && (this.selectable === true || filterable && this.meta.some(function(val){
         return this._isFilterableColumn(val);
-      }.bind(this)));
+      }.bind(this))));
     }
   });
 </script>

@@ -128,6 +128,7 @@ Custom property | Description | Default
                  show-column-chooser="{{showColumnChooser}}"
                  enable-column-reorder="{{enableColumnReorder}}"
                  enable-column-resize="{{enableColumnResize}}"
+				 hide-filter-row="{{hideFilterRow}}"
                  id="dataTable">
                  <content></content>
       </aha-table>
@@ -308,13 +309,28 @@ Custom property | Description | Default
         type: Boolean,
         value: false
       },
-	  /* Property which will contain various callbacks which can be called by various events
-	  These callbacks can be used as hooks by solution developers to wire in their decision points.
-	  For eg: beforeEdit callback can be called everytime user wants to edit a cell. If solution developer returns false, then edit flow is blocked	  
-	  */
+	   /**
+       * Property which will contain various callbacks which can be called by various events
+       * These callbacks can be used as hooks by solution developers
+       * to wire in their decision points.
+       * For eg: beforeEdit callback can be called everytime user wants to edit a cell.
+       * If solution developer returns false, then edit flow is blocked
+       * @default {}
+       */
 	  tableCallbacks:{
 		type: Object,
 		value:{}
+	  },
+	   /**
+       * Property to explicitly hide filter row.
+       * If the property value is true, it will not check any other value hide the filter bar.
+       * Use case could be that solution developer wants the filter functionality but
+       * has provided the option somewhere else in the UI
+       * @default false
+       */
+	  hideFilterRow:{
+		type:Boolean,
+		value:false
 	  }
     }
 

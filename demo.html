@@ -87,7 +87,7 @@
       </div>
 
 	<!--Removed hide-pagination-control property as input control with checkbox and number had some issues across page-->
-      <px-data-table id="mytable" page-size="3" selected-rows="{{mySelectedRows}}" enable-column-resizing enable-column-reorder show-column-chooser filterable selectable table-data="{{minidata}}">
+      <px-data-table id="mytable" hide-filter-row="true" page-size="3" selected-rows="{{mySelectedRows}}" enable-column-resizing enable-column-reorder show-column-chooser filterable selectable table-data="{{minidata}}">
         <px-data-table-column
           name="first"
           filterable
