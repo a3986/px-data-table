@@ -103,6 +103,12 @@ $px-data-table-cell-inner-height : calculateRem(18px);
   height: calculateRem(14px);
 }
 
+input.noSpinner[type=number]::-webkit-inner-spin-button,
+input.noSpinner[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 // Trumps
 @import "inuit-clearfix/_trumps.clearfix.scss";
 

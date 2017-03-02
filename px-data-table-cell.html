@@ -29,8 +29,8 @@
 		<template is="dom-if" if="{{_isEqual(cellType, 'number')}}">
 		<div class="flex__item cell--container">
           <span>
-		    <input type="number" id="celleditinput"	title$="{{cellValue}}" value$="{{cellValue}}" on-input="_cellValueChanged"
-                 on-blur="saveCell" min={{editorOptions.min}} max="{{editorOptions.max}}" />
+		    <input type="number" id="celleditinput" class$="{{_getEditorClass(editorOptions)}}"	title$="{{cellValue}}" value$="{{cellValue}}" on-input="_cellValueChanged"
+                 on-blur="saveCell" min={{editorOptions.min}} max="{{editorOptions.max}}" step="{{editorOptions.step}}" />
           </span>
         </div>
       </template>
@@ -462,7 +462,15 @@
 			return false;
 		 }
 		 return true;
-	  }
+	  },
+	  _getEditorClass: function(editorOptions) {
+		var className = "";
+		if(editorOptions && editorOptions.spinner==false)
+		{
+			className = "noSpinner";
+		}
+		return className;
+      },
     });
   </script>
 </dom-module>
