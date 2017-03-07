@@ -1593,7 +1593,7 @@
       return source === false || source === "false";
     },
     _getHeaderClass: function(item) {
-      var classList = ['th ', 'aha-' + item.name + '-th', 'u-p0'];
+      var classList = ['th ', 'aha-' + item.name + '-th', 'u-p0','aha-' + item.type + '-th'];
       if(item.sortable) {
         classList.push('sortable');
       }
