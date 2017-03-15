@@ -87,7 +87,7 @@
       </div>
 
 	<!--Removed hide-pagination-control property as input control with checkbox and number had some issues across page-->
-      <px-data-table id="mytable" hide-filter-row="true" page-size="3" selected-rows="{{mySelectedRows}}" enable-column-resizing enable-column-reorder show-column-chooser filterable selectable table-data="{{minidata}}">
+      <px-data-table id="mytable" hide-filter-row="true" page-size="3" selected-rows="{{mySelectedRows}}" enable-column-resizing enable-column-reorder show-column-chooser filterable selectable table-data="{{minidata}}" row-level-validation="true">
         <px-data-table-column
           name="first"
           filterable
@@ -95,7 +95,7 @@
           editable
           filter-function-name="myTableCustomFunctions.filterWholeWord">
           <px-validation>
-            <px-validator validation-method="isNumber" import="../px-validation/px-example-validator.html"></px-validator>
+			<px-validator validation-method="isNumber" import="sample-validation.html"></px-validator>
           </px-validation>
           <px-data-table-highlight highlight-type="cell" highlight-value="medium" highlight-method="wordBeginsWithLetterJ" import="px-example-highlight.html"></px-data-table-highlight>
           <px-data-table-highlight highlight-type="row" highlight-value="high" highlight-method="isLongString" import="px-example-highlight.html"></px-data-table-highlight>
@@ -133,6 +133,24 @@
 				<px-validator validation-method="isNumberInRange" import="sample-validation.html"></px-validator>
 			</px-validation>
 			<px-data-table-highlight highlight-type="cell" highlight-value="high" highlight-method="numberOutOfRange" import="px-example-highlight.html"></px-data-table-highlight>
+        </px-data-table-column>
+		 <px-data-table-column
+          name="min"
+		  type="number"
+		  editor-options='{"spinner":false}'
+		  editable sortable>
+			<px-validation>
+				<px-validator validation-method="isValidMinMax" import="sample-validation.html"></px-validator>
+			</px-validation>
+        </px-data-table-column>
+		 <px-data-table-column
+          name="max"
+		  type="number"
+		  editor-options='{"spinner":false}'
+		  editable sortable>
+			<px-validation>
+				<px-validator validation-method="isValidMinMax" import="sample-validation.html"></px-validator>
+			</px-validation>
         </px-data-table-column>
         <px-data-table-column
           name="color"
@@ -186,14 +204,41 @@
             console.log("Row clicked", clickedRow, " _selected: ", clickedRow._selected);
           });
 		  document.getElementById("mytable").tableCallbacks = window.tableCallbacks;
+		  document.getElementById("mytable").tableData =  JSON.parse(JSON.stringify(document.getElementById("mytable").tableData));
         });
 		window.tableCallbacks = {
-			beforeEdit:function(dataRow,column){
+			beforeEdit:function(cellObj){
+				var dataRow = cellObj.dataRow.row,
+				column =cellObj.columnName;
 				if(column=="integer")
 				{
 					return dataRow.boolean.value;
 				}
 				return true;
+			},
+			renderer:function(cellObj)
+			{
+				console.log(cellObj.columnName);
+				if(cellObj.columnName=="integer")
+				{
+					return {
+						html: "$ " + cellObj.cellDisplayValue
+					};
+				}
+				return {
+					html:cellObj.cellDisplayValue
+				};
+				/* Sample object structure if one needs to extend aha-html-echo to support event/callbacks - Implementation pending
+				return {
+				"html":"<div><span>" +cellObj.cellDisplayValue+"</span><button data-name='myButton'>Click</button></div>",
+				"callbacks":{
+					"button[name=myButton]":{
+						"click":function(){
+							console("HTML button clicked");
+						}
+					}
+				}
+				} ;*/
 			}
 		};
 	</script>

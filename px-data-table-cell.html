@@ -67,8 +67,14 @@
       <!-- in place editing template -->
       <template is="dom-if" if="{{_isEqual(cellType,'string')}}">
         <div class="flex cell--container">
+		<template is="dom-if" if="{{_isRendererDefined(cellType,'html')}}">
+			<aha-html-echo id="cellvalue" class$="{{_getValueCellClass(_editing, cellValidation.passedValidation, cellDisplayValue)}}" html="{{_getCellDisplayValue(cellDisplayValue)}}"></aha-html-echo>
+		</template>
+		<template is="dom-if" if="{{!_isRendererDefined(cellType,'string')}}">
           <span id="cellvalue" class$="{{_getValueCellClass(_editing, cellValidation.passedValidation, cellDisplayValue)}}">{{cellDisplayValue}}
-            <template is="dom-if" if="{{cellDisplayTooltip}}">
+		  </span>
+		 </template>
+		  <template is="dom-if" if="{{cellDisplayTooltip}}">
               <px-tooltip
                 orientation="top"
                 smart-orientation
@@ -76,13 +82,18 @@
                 tooltip-message="{{cellValue}}">
               </px-tooltip>
             </template>
-          </span>
         </div>
       </template>
 	   <template is="dom-if" if="{{_isEqual(cellType,'number')}}">
         <div class="flex cell--container">
+		<template is="dom-if" if="{{_isRendererDefined(cellType,'html')}}">
+			<aha-html-echo id="cellvalue" class$="{{_getValueCellClass(_editing, cellValidation.passedValidation, cellDisplayValue)}}" html="{{_getCellDisplayValue(cellDisplayValue)}}"></aha-html-echo>
+		</template>
+		<template is="dom-if" if="{{!_isRendererDefined(cellType,'number')}}">
           <span id="cellvalue" class$="{{_getValueCellClass(_editing, cellValidation.passedValidation, cellDisplayValue)}}">{{cellDisplayValue}}
-            <template is="dom-if" if="{{cellDisplayTooltip}}">
+          </span>
+		  </template>
+		    <template is="dom-if" if="{{cellDisplayTooltip}}">
               <px-tooltip
                 orientation="top"
                 smart-orientation
@@ -90,7 +101,6 @@
                 tooltip-message="{{cellValue}}">
               </px-tooltip>
             </template>
-          </span>
         </div>
       </template>
       <!-- icon template -->
@@ -113,7 +123,7 @@
     </span>
     <!-- html content -->
     <template is="dom-if" if="{{_isEqual(cellType,'html')}}">
-      <aha-html-echo html="{{cellDisplayValue}}"></aha-html-echo>
+	<aha-html-echo html="{{cellDisplayValue}}"></aha-html-echo>
     </template>
   </template>
 </template>
@@ -471,6 +481,24 @@
 		}
 		return className;
       },
+	  _getCellDisplayValue: function()
+	  {
+		var strReturnValue = this.cellDisplayValue;
+		var objReturnValue;
+		if(this.callbacks && this.callbacks.renderer)
+		{
+			objReturnValue = this.callbacks.renderer(this);
+			strReturnValue = objReturnValue.html;
+		}
+		return strReturnValue;
+	  },
+	  _isRendererDefined:function(cellType,type)
+	  {
+		if(this.callbacks && this.callbacks.renderer)
+			return true;
+		else
+			return false;
+	  }
     });
   </script>
 </dom-module>

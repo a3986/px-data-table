@@ -129,6 +129,7 @@ Custom property | Description | Default
                  enable-column-reorder="{{enableColumnReorder}}"
                  enable-column-resize="{{enableColumnResize}}"
 				 hide-filter-row="{{hideFilterRow}}"
+				 row-level-validation="{{rowLevelValidation}}"
                  id="dataTable">
                  <content></content>
       </aha-table>
@@ -329,6 +330,18 @@ Custom property | Description | Default
        * @default false
        */
 	  hideFilterRow:{
+		type:Boolean,
+		value:false
+	  },
+	  /**
+       * Property to enable/disable row level validation.
+       * If the property value is true, on every value change(on blur), the validation code will run for all the cells 
+       * for the same row.
+       * Use case: When columns values are dependent on each other and changing one cell value can make the cell value
+       * in another column invalid in the same row
+       * @default false
+       */
+	  rowLevelValidation:{
 		type:Boolean,
 		value:false
 	  }

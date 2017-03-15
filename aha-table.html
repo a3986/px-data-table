@@ -329,6 +329,18 @@
 		type:Boolean,
 		value:false
 	  },
+	  /**
+       * Property to enable/disable row level validation.
+       * If the property value is true, on every value change(on blur), the validation code will run for all the cells 
+       * for the same row.
+       * Use case: When columns values are dependent on each other and changing one cell value can make the cell value
+       * in another column invalid in the same row
+       * @default false
+       */
+	  rowLevelValidation:{
+		type:Boolean,
+		value:false
+	  },
       /**
        * When currently resizing a header
        */
@@ -567,17 +579,16 @@
 		{
 			for(var callback in tableCallbacks)
 			{
-				wrapperCallbacks[callback] = function(cellObj){
-					return tableCallbacks[callback](cellObj.dataRow.row,cellObj.columnName);
+				wrapperCallbacks[callback] = (function(callback){
+					return function(cellObj){
+					return tableCallbacks[callback](cellObj);
 				}.bind(this);
+				})(callback);
 			}
 		}
 		return wrapperCallbacks;
 	},
-
     /********** Generating column metadata *************/
-
-
     _generateMetaFromData: function() {
       var meta = [];
 
@@ -1038,7 +1049,8 @@
         evt.currentTarget.cellDisplayValue = this._readContent(row, column);
         this.data[row.row.dataIndex][column.name] = newValue;
         this.notifyPath('data.' + row.row.dataIndex + '.' + column.name, newValue);
-
+		/* Validation event fires on input and value is set on blur. So row level validation should be triggered once the value is set after blur */
+		this._triggerValidationOnValueChange(evt);
       }
 
 			if (column.required && !evt.target.validity.valid) {
@@ -1050,11 +1062,52 @@
     _cellChanged: function(oldValue, newValue){
       return (oldValue !== newValue);
     },
-    _handleValidateEvent: function(evt){
+	_triggerValidationOnValueChange: function(evt)
+	{
+		var evtDetail = {
+			newValue :evt.currentTarget.cellValue,
+			eOpts:{
+					inputObj:evt.currentTarget.querySelector("input"),
+					target:evt.currentTarget
+				}
+			}
+		evt.detail = evtDetail;
+		this._handleValidateEvent(evt,true);
+	},
+    _handleValidateEvent: function(evt,isBlurEvent){
       var column = evt.model.column,
 	  validationObj = column.validate(evt.detail); //Sending the entire object will allow end user to apply row level validations
       evt.currentTarget.cellValidation = validationObj;
       this._setInternalCellValidationStateAt(evt.model.internalRow, column.name, validationObj);
+	  if(isBlurEvent && this.rowLevelValidation)
+	  {
+		 //Extra Code to validate all cells in a row
+		setTimeout(function(){
+			  var dataIndex = evt.target.dataRow.row.dataIndex;
+			  var uiRowIndex = this._getRowIndexForDataIndex(dataIndex);
+			  var arrColumnsDefs = this.getContentChildren();
+			  var arrCells = this.querySelectorAll(".tr.rows")[uiRowIndex].querySelectorAll("px-data-table-cell");
+			  for(var index=0; index<arrColumnsDefs.length;index++)
+			  {
+				var column = arrColumnsDefs[index];
+				var cell = arrCells[index];
+				if(evt.model.internalRow.row[column.name]) /*&& column!==evt.model.column)*/
+				{
+					var evtDetail = {
+					newValue :cell.cellValue,
+					eOpts:{
+							inputObj:cell.querySelector("input"),
+							target:cell
+						}
+					};
+					var validationObj = column.validate(evtDetail);
+					//this._setInternalCellValidationStateAt(evt.model.internalRow, column.name, validationObj);
+					cell.cellValidation = validationObj;
+					this._setInternalCellValidationStateAt(evt.model.internalRow, column.name, validationObj);
+				}
+			  }
+		}.bind(this),0);
+	  }
     },
     _clickRow: function(evt) {
       var column = evt.model.column,
@@ -1512,7 +1565,7 @@
           highlightClass;
 
       highlightElements.forEach(function(highlightEl) {
-        doHighlight = highlightEl.highlight(this._getInternalDataAt(row, column.name));
+        doHighlight = highlightEl.highlight(this._getInternalDataAt(row, column.name),row,column);
         if (highlightObj.value && doHighlight) {
           if(highlightObj.highlightValue === 'low'){
             highlightObj.highlightClass = 'cell--value__highlight--color__' + highlightEl.highlightValue;
@@ -1680,6 +1733,19 @@
       this._enableFilterRow = !this.hideFilterRow && (meta && (this.selectable === true || filterable && this.meta.some(function(val){
         return this._isFilterableColumn(val);
       }.bind(this))));
-    }
+    },
+	//It returns current UI row index for a particular row dataIndex. The row and data index are not in sync after page change or sorting 
+	_getRowIndexForDataIndex : function(dataIndex)
+	{
+		var filteredSortedData = this.filteredSortedData;
+		for(var index=0; index< filteredSortedData.length; index++)
+		{
+			var data = filteredSortedData[index];
+			if(data.row.dataIndex==dataIndex)
+			{
+				return index - (this.firstItemIndex - 1);
+			}
+		}
+	}
   });
 </script>

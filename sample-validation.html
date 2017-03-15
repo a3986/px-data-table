@@ -15,6 +15,41 @@ var PxValidators = {
 		errObj.passedValidation = ((value || value === 0) && value.toString() !== "true") ? (+value === +value) : false;
 		return errObj;
 	},
+	isValidMinMax:function(valueObj)
+	{
+		var value = valueObj.newValue;
+		var target = valueObj.eOpts.target;
+		var cell = target;
+		var columnName = cell.columnName;
+		var dataRow = cell.dataRow;
+		var inputObj = valueObj.eOpts.inputObj;
+		var errObj = PxValidators.errorObject();
+		errObj.failedValidationFunctionName = 'isValidMinMax';
+		errObj.failedValidationErrorMessage = 'Invalid Min and Max';
+		errObj.passedValidation = ((value || value === 0) && value.toString() !== "true") ? (+value === +value) : false;
+		if(errObj.passedValidation)
+		{
+			if(columnName=="min")
+			{
+				if(Number(dataRow.row.min.value) >= Number(dataRow.row.max.value))
+				{
+					errObj.failedValidationErrorMessage = 'Min Value should be less than Max Value';
+					errObj.passedValidation = false;
+					return errObj;
+				}
+			}
+			else if(columnName=="max")
+			{
+				if(Number(dataRow.row.min.value) >= Number(dataRow.row.max.value))
+				{
+					errObj.failedValidationErrorMessage = 'Max Value should be greater than Min Value';
+					errObj.passedValidation = false;
+					return errObj;
+				}
+			}
+		}
+		return errObj;
+	},
 	isNumberInRange: function (valueObj) {
 		// var valueObj = evt.detail;
 		var value = valueObj.newValue;
