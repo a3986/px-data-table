@@ -1086,7 +1086,10 @@
 			  var dataIndex = evt.target.dataRow.row.dataIndex;
 			  var uiRowIndex = this._getRowIndexForDataIndex(dataIndex);
 			  var arrColumnsDefs = this.getContentChildren();
-			  var arrCells = this.querySelectorAll(".tr.rows")[uiRowIndex].querySelectorAll("px-data-table-cell");
+			  var rowList = this.querySelectorAll(".tr.rows");
+			 if(rowList.length>0)
+			 {
+			  var arrCells = rowList[uiRowIndex].querySelectorAll("px-data-table-cell");
 			  for(var index=0; index<arrColumnsDefs.length;index++)
 			  {
 				var column = arrColumnsDefs[index];
@@ -1106,6 +1109,7 @@
 					this._setInternalCellValidationStateAt(evt.model.internalRow, column.name, validationObj);
 				}
 			  }
+			 }
 		}.bind(this),0);
 	  }
     },
