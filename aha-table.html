@@ -1159,13 +1159,35 @@
 
     _setAllRows: function(isSelected,columnName) {
       var i,
-          len;
+          len,
+		  isBeforeEditCallback=false;
 		  //This if block is used when select all functionality of boolean column is used
+		  if(this.wrapperCallbacks && this.wrapperCallbacks.beforeEdit)
+			{
+				isBeforeEditCallback = true;
+			}
 		  if(columnName)
 		  {
 			for(i = 0, len = this._internalData.length; i < len; i++) {
-				this._setInternalDataAt(this._internalData[i], columnName, isSelected);
-				this.data[i][columnName]=isSelected;
+				if(isBeforeEditCallback)
+				{
+					var cellObj = {
+						columnName:columnName,
+						dataRow:{
+							row:this._internalData[i].row
+						}
+					}
+					if(this.wrapperCallbacks.beforeEdit(cellObj))
+					{
+						this._setInternalDataAt(this._internalData[i], columnName, isSelected);
+						this.data[i][columnName]=isSelected;
+					}
+				}
+				else
+				{
+					this._setInternalDataAt(this._internalData[i], columnName, isSelected);
+					this.data[i][columnName]=isSelected;
+				}
 			 }
 			  this._filterSortAndUpdateDisplayedTable(true,false);//Force render is true and goToPage 1 is false
 			  return;

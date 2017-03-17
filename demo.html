@@ -214,6 +214,10 @@
 				{
 					return dataRow.boolean.value;
 				}
+				if(column=="boolean" && (dataRow.country.value=="Germany" || dataRow.country.value=="Chad"))
+				{
+					return false;
+				}
 				return true;
 			},
 			renderer:function(cellObj)
