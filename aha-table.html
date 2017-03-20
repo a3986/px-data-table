@@ -35,7 +35,7 @@
         <div class="tr">
           <template is="dom-repeat" items="{{meta}}" as="column">
             <template is="dom-if" if="{{_isFalse(column.hide)}}">
-              <span class$="{{_getHeaderClass(column)}}" draggable="{{enableColumnReorder}}" on-touchstart="_dragStartColumnHeader" on-touchmove="_touchMoveHeader" on-touchleave="_dragLeave" on-touchend="_touchDropColumnHeader" on-dragleave="_dragLeave" on-dragstart="_dragStartColumnHeader" on-dragover="_dragOverHeader" on-drop="_dragDropColumnHeader" on-dragend="_dragEndColumnHeader">
+              <span class$="{{_getHeaderClass(column)}}" draggable="{{enableColumnReorder}}" on-touchstart="_dragStartColumnHeader" on-touchmove="_touchMoveHeader" on-touchleave="_dragLeave" on-touchend="_touchDropColumnHeader" on-dragleave="_dragLeave" on-dragstart="_dragStartColumnHeader" on-dragover="_dragOverHeader" on-drop="_dragDropColumnHeader" on-dragend="_dragEndColumnHeader"  on-tap="_onHeaderClick">
                 <div class="flex header--container">
 				<!--The select all checkbox can be moved to top so that dependency of filter header and select all functionality is removed-->
 				<!--<template is="dom-if" if="{{_isSelectAllColumn(column)}}">
@@ -580,8 +580,8 @@
 			for(var callback in tableCallbacks)
 			{
 				wrapperCallbacks[callback] = (function(callback){
-					return function(cellObj){
-					return tableCallbacks[callback](cellObj);
+					return function(){
+					return tableCallbacks[callback].apply(this,arguments);
 				}.bind(this);
 				})(callback);
 			}
@@ -1774,6 +1774,16 @@
 				return index - (this.firstItemIndex - 1);
 			}
 		}
+	},
+	_onHeaderClick:function(e,eOpts){
+		var column = e.model.column;
+		 if(column)
+		 {
+			if(this.wrapperCallbacks && this.wrapperCallbacks.headerClick)
+			{
+				this.wrapperCallbacks.headerClick(column,e,eOpts);
+			}
+		 }
 	}
   });
 </script>
