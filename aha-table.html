@@ -1181,12 +1181,14 @@
 					{
 						this._setInternalDataAt(this._internalData[i], columnName, isSelected);
 						this.data[i][columnName]=isSelected;
+						this.set('data.' + i + '.' + columnName, isSelected);
 					}
 				}
 				else
 				{
 					this._setInternalDataAt(this._internalData[i], columnName, isSelected);
 					this.data[i][columnName]=isSelected;
+					this.set('data.' + i + '.' + columnName, isSelected);
 				}
 			 }
 			  this._filterSortAndUpdateDisplayedTable(true,false);//Force render is true and goToPage 1 is false
