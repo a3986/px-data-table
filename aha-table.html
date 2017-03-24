@@ -356,6 +356,12 @@
         type: Boolean,
         value: false
       },
+	  booleanColumnInfo:{
+		type:Object,
+		value:function(){
+			return {};
+		},
+	  },
       //scroll body html element
       scrollBody: {
         type: HTMLElement,
@@ -534,6 +540,7 @@
 	  {
 		this._filterSortAndUpdateDisplayedTable(true,true);//Both forceRender and goToDefaultPage 1 is true
 		this._setHeaderToDefaultState(); //Set the state of header checkbox to default
+		this._initializeBooleanColumnInfo();
 	  }
 	  else //When only a property in a row is changed
 	  {
@@ -552,13 +559,111 @@
             return true;
           }
         });
+		if(column && column.type=="boolean")
+		{
+			this._updateBooleanColumnInfo(column,changeRec.value);
+		}
         if(this._cellChanged(this._readContent(this._internalData[index], column), changeRec.value)){
           this._handleValidateEvent(evt); //TODO: evt variable not defined correct the code
         }
       }
-
     },
-
+	_initializeBooleanColumnInfo: function()
+	{
+		//Initialize booleanColumnInfo
+		for(var colIndex=0; colIndex< this.meta.length; colIndex++ )
+		{
+			if(this.meta[colIndex].type=="boolean")
+			{
+				this.booleanColumnInfo[this.meta[colIndex].name]=0;
+			}
+		}
+		var currentData;
+		for(var dataIndex = 0 ;dataIndex < this.data.length ; dataIndex++)
+		{
+			currentData = this.data[dataIndex];
+			for(var booleanColumnKey in this.booleanColumnInfo)
+			{
+				if(Boolean(currentData[booleanColumnKey]))
+				{
+					this.booleanColumnInfo[booleanColumnKey]++;
+				}
+			}
+		}
+		this._updateBooleanColumnHeaderState();
+	},
+	_updateBooleanColumnInfo: function(column,value)
+	{
+		if(this.booleanColumnInfo.hasOwnProperty(column.name))
+		{
+			if(value)
+			{
+				this.booleanColumnInfo[column.name]++;
+				if(this.booleanColumnInfo[column.name]>this.data.length)
+				{
+					this.booleanColumnInfo[column.name]=this.data.length;
+				}
+			}
+			else
+			{
+				this.booleanColumnInfo[column.name]--;
+				if(this.booleanColumnInfo[column.name]<0)
+				{
+					this.booleanColumnInfo[column.name]=0;
+				}
+			}
+		}
+		this._updateBooleanColumnHeaderState(column.name);
+	},
+	_updateBooleanColumnHeaderState: function(columnName)
+	{
+		var dataLength = this.data.length;
+		if(columnName)
+		{
+			var checkBox = Polymer.dom(this.root).querySelector(".aha-"+columnName+"-th input#selectAllCheckbox");
+			if(this.booleanColumnInfo[columnName]==dataLength)
+			{
+				checkBox.checked = true;
+				checkBox.indeterminate = false;
+			}
+			else if(this.booleanColumnInfo[columnName]>0)
+			{
+				checkBox.checked = false;
+				checkBox.indeterminate = true;
+			}
+			else
+			{
+				checkBox.checked = false;
+				checkBox.indeterminate = false;
+			}
+		}
+		else
+		{
+			for(var colIndex=0; colIndex< this.meta.length; colIndex++)
+			{
+				if(this.meta[colIndex].type=="boolean")
+				{
+					var columnName = this.meta[colIndex].name;
+					var checkBox = Polymer.dom(this.root).querySelector(".aha-"+columnName+"-th input#selectAllCheckbox");
+					if(this.booleanColumnInfo[columnName]==dataLength)
+					{
+						checkBox.checked = true;
+						checkBox.indeterminate = false;
+					}
+					else if(this.booleanColumnInfo[columnName]>0)
+					{
+						checkBox.checked = true;
+						checkBox.indeterminate = true;
+					}
+					else
+					{
+						checkBox.checked = false;
+						checkBox.indeterminate = false;
+					}
+				}
+			}
+		}
+	},
     _selectableChanged: function(newSelectable) {
       // if meta is already defined and then selectable is set, we need to backfill the meta with the _selected column
       if(newSelectable === true && this.meta !== null && this.meta !== undefined && this.meta.length > 0) {
@@ -1147,6 +1252,7 @@
       else {
         this._setAllRows(false,e.target.dataField); // unselected
       }
+	  this._updateBooleanColumnHeaderState(e.target.dataField);
     },
     _clickSelectAll: function(e) {
       if(e.target.checked) {
